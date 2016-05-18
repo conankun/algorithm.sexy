@@ -7,7 +7,8 @@ import subprocess
 import time
 import os
 import resource
-from modules import *
+from exceptions import *
+from modules import CompileInstance
 
 DEBUG=1
 
@@ -57,7 +58,7 @@ def grading(problem, runid, lang):
                 print ("=====data"+str(dataNum)+"=====")
             inputfile = data_directory+"input"+str(dataNum)+".txt"
             outputfile = data_directory+"output"+str(dataNum)+".txt"
-            cmd = ['python3', 'judge_client.py', problem, runid, lang, str(subtaskNum), str(dataNum), str(timeLimit), str(memoryLimit)]
+            cmd = ['python', 'judge_client.py', problem, runid, lang, str(subtaskNum), str(dataNum), str(timeLimit), str(memoryLimit)]
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
             out, err = proc.communicate()
             proc.wait()

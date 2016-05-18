@@ -8,7 +8,9 @@ import time
 import os
 import resource
 import sys
+import psutil
 from exceptions import *
+from modules import *
 """
 tr = compile('C++','RUN/')
 if not tr:
@@ -57,13 +59,10 @@ class RunInstance:
             return ['python3', self.directory+'Main.py']
         else:
             return []
-    def setlimits(self):
-        #resource.setrlimit(resource.RLIMIT_CPU, (1, 1))
+    def sandbox(self):
+        ### TIME LIMIT
+        resource.setrlimit(resource.RLIMIT_CPU, (int(self.timelimit/1000) + 1, 20))
         ### LIMIT MEMORY USAGE
-        #stack
-        resource.setrlimit(resource.RLIMIT_STACK, (1024*1024*self.memorylimit, 1024*1024*1024))
-        #heap
-        resource.setrlimit(resource.RLIMIT_DATA, (1024*1024*self.memorylimit, 1024*1024*1024))
         #overall memory
         resource.setrlimit(resource.RLIMIT_AS, (1024*1024*self.memorylimit, 1024*1024*1024))
         ### BLOCK ATTACKS
@@ -84,31 +83,42 @@ class RunInstance:
         ####################Run####################
         #start time stamp
         start_time = time.time()
-        try:
-            proc = subprocess.Popen(cmd, stdin=input_file, stdout=output_file, stderr=subprocess.PIPE, shell=False, preexec_fn=self.setlimits)
-            ####################Restrictions####################
-            out, err = proc.communicate(timeout=int(self.timelimit/1000 + 1))
-            proc.wait()
-        except BlockingIOError:
-            proc.terminate()
-            print("Suspected System Hacks")
-        except subprocess.TimeoutExpired:
-            proc.terminate()
+        proc = subprocess.Popen(cmd, stdin=input_file, stdout=output_file, stderr=subprocess.PIPE, preexec_fn=self.sandbox, shell=False,  close_fds=True)
+        ####################Memory Usage####################
+        pid = proc.pid
+        process = psutil.Process(pid)
+        topmemory = process.get_memory_info()[0]
+        while proc.poll() is None:
+            process = psutil.Process(pid)
+            mem = process.get_memory_info()[0]
+            if mem > topmemory:
+                topmemory = mem
+        out, err = proc.communicate()
+        rc = proc.wait()
+
+        #adjustment
+        if topmemory is 0:
+            topmemory = 356*1024
+
+        #end time stamp
+        end_time = time.time()
+        if 1000*(end_time - start_time) > self.timelimit:
+            #TLE
             print("Time Limit Exceeded")
         else:
-            #end time stamp
-            end_time = time.time()
-            if end_time - start_time > self.timelimit:
-                #TLE
-                print("Time Limit Exceeded")
+            memoryUsed = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            if rc == 0:
+                print("Running Time : {:.4f} seconds".format(end_time - start_time))
+                print("Memory Usage : "+str(int(topmemory/1024))+" KB")
+                output_file.flush()
+            elif rc == -8:
+                print("Divide-By-Zero")
+            elif rc == -9:
+                print("Memory Limit Exceeded::")
+            elif rc == -11:
+                print("Segmentation Fault")
             else:
-                memoryUsed = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss/1024
-                if memoryUsed > self.memorylimit:
-                    print("Memory Limit Exceeded::"+str(int(memoryUsed))+" MB / "+str(self.memorylimit)+" MB")
-                else:
-                    print("Running Time : {:.4f} seconds".format(end_time - start_time))
-                    print("Memory Usage : "+str(int(memoryUsed))+" KB")
-                    output_file.flush()
+                print("Runtime Error")
 
 #######################################
 argc = len(sys.argv)
