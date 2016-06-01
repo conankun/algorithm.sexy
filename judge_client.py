@@ -87,10 +87,10 @@ class RunInstance:
         ####################Memory Usage####################
         pid = proc.pid
         process = psutil.Process(pid)
-        topmemory = process.get_memory_info()[0]
+        topmemory = process.get_memory_info()[0] 
         while proc.poll() is None:
             process = psutil.Process(pid)
-            mem = process.get_memory_info()[0]
+            mem = process.get_memory_info()[0] 
             if mem > topmemory:
                 topmemory = mem
         out, err = proc.communicate()

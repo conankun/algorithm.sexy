@@ -8,7 +8,7 @@ import time
 import os
 import resource
 from exceptions import *
-from modules import CompileInstance
+from modules import CompileInstance, ClearInstance
 
 DEBUG=1
 
@@ -44,7 +44,7 @@ def grading(problem, runid, lang):
         return
     problemInfo = fetch_problem_information(problem)
     subtasks = problemInfo[0]
-    for subtask in range(subtasks):
+    for subtask in xrange(subtasks):
         subtaskNum = subtask + 1
         testdataNum = problemInfo[1][subtask]
         timeLimit = problemInfo[2][subtask]
@@ -52,7 +52,7 @@ def grading(problem, runid, lang):
         data_directory = "problems/"+problem+"/subtask"+str(subtaskNum)+"/"
         if DEBUG:
             print ("========== SUBTASK #"+str(subtaskNum)+" ==========")
-        for data in range(testdataNum):
+        for data in xrange(testdataNum):
             dataNum = data + 1
             if DEBUG:
                 print ("=====data"+str(dataNum)+"=====")
@@ -66,4 +66,5 @@ def grading(problem, runid, lang):
                 print (out)
                 if err:
                     print(err)
+    ClearInstance().remove_dummies(lang, "RUN/"+str(runid)+"/")
 grading('1000', '1', 'C++')
